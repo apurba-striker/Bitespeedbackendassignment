@@ -52,8 +52,8 @@ export class IdentityService {
   }
 
   private async findExistingContacts(email?: string, phoneNumber?: string): Promise<Contact[]> {
-    const conditions = [];
-    const params = [];
+    const conditions: string[] = []; // Explicitly typed
+    const params: any[] = [];        // Explicitly typed
     let paramIndex = 1;
 
     if (email) {
@@ -64,6 +64,10 @@ export class IdentityService {
     if (phoneNumber) {
       conditions.push(`phoneNumber = $${paramIndex++}`);
       params.push(phoneNumber);
+    }
+
+    if (conditions.length === 0) {
+      return [];
     }
 
     const query = `
@@ -92,7 +96,7 @@ export class IdentityService {
     }
 
     // Fetch all contacts linked to these primaries
-    const primaryIdArray = Array.from(primaryIds);
+    const primaryIdArray: number[] = Array.from(primaryIds); // Explicitly typed
     const placeholders = primaryIdArray.map((_, i) => `$${i + 1}`).join(',');
     
     const query = `
@@ -102,7 +106,8 @@ export class IdentityService {
       ORDER BY createdAt ASC
     `;
 
-    const result = await pool.query(query, [...primaryIdArray, ...primaryIdArray]);
+    const queryParams: number[] = [...primaryIdArray, ...primaryIdArray]; // Explicitly typed
+    const result = await pool.query(query, queryParams);
     return result.rows;
   }
 
@@ -223,22 +228,23 @@ export class IdentityService {
     `;
 
     const result = await pool.query(query, [phoneNumber || null, email || null, linkedId]);
-    return result.rows;
+    return result.rows[0];
   }
 
   private buildResponse(contacts: Contact[]): IdentifyResponse {
     const primary = contacts.find(c => c.linkPrecedence === 'primary')!;
     const secondaries = contacts.filter(c => c.linkPrecedence === 'secondary');
 
-    const emails = Array.from(new Set([
+    // Explicitly typed arrays with proper filtering
+    const emails: string[] = Array.from(new Set([
       primary.email,
       ...secondaries.map(c => c.email)
-    ].filter(Boolean) as string[]));
+    ].filter((email): email is string => Boolean(email))));
 
-    const phoneNumbers = Array.from(new Set([
+    const phoneNumbers: string[] = Array.from(new Set([
       primary.phoneNumber,
       ...secondaries.map(c => c.phoneNumber)
-    ].filter(Boolean) as string[]));
+    ].filter((phone): phone is string => Boolean(phone))));
 
     return {
       contact: {
